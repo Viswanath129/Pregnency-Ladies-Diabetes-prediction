@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Risk2Relief - Clinical Intelligence</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Poppins', 'sans-serif'] },
+                    colors: { brand: { light: '#2dd4bf', DEFAULT: '#0d9488' }, accent: '#fb7185' }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #020617; color: #f8fafc; overflow-x: hidden; }
+        #canvas-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; }
+        .glass-card { background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        input { background: rgba(30, 41, 59, 0.7); color: #fff; border: 1px solid rgba(255,255,255,0.1); padding: 0.75rem; border-radius: 0.5rem; width: 100%; }
+        input:focus { border-color: #2dd4bf; outline: none; }
+        .reveal-card { animation: fadeIn 0.8s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+    <div id="canvas-container"></div>
+
+    <nav class="glass-card sticky top-0 z-50 p-4 shadow-xl">
+        <div class="container mx-auto flex items-center gap-3">
+            <div class="bg-brand text-white w-10 h-10 rounded-xl flex items-center justify-center shadow-lg"><i class="fa-solid fa-dna text-lg"></i></div>
+            <h1 class="text-xl font-bold">Risk2<span class="text-brand-light">Relief</span></h1>
+        </div>
+    </nav>
+
+    <main class="container mx-auto px-4 py-8 max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-8">
+        <div class="lg:col-span-7 glass-card rounded-3xl p-8">
+            <h2 class="text-2xl font-bold mb-6"><i class="fa-solid fa-calculator text-brand-light mr-2"></i>Patient Vitals</h2>
+            <form id="form-prediction" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div class="space-y-1"><label class="text-[10px] font-bold text-slate-400 uppercase">Pregnancies</label><input type="number" id="p-preg" placeholder="e.g. 2" min="0"></div>
+                <div class="space-y-1"><label class="text-[10px] font-bold text-slate-400 uppercase">Glucose</label><input type="number" id="p-gluc" placeholder="e.g. 110" min="0"></div>
+                <div class="space-y-1"><label class="text-[10px] font-bold text-slate-400 uppercase">Blood Pressure</label><input type="number" id="p-bp" placeholder="e.g. 70" min="0"></div>
+                <div class="space-y-1"><label class="text-[10px] font-bold text-slate-400 uppercase">Skin Thickness</label><input type="number" id="p-skin" placeholder="e.g. 20" min="0"></div>
+                <div class="space-y-1"><label class="text-[10px] font-bold text-slate-400 uppercase">Insulin</label><input type="number" id="p-ins" placeholder="e.g. 80" min="0"></div>
+                <div class="space-y-1"><label class="text-[10px] font-bold text-slate-400 uppercase">BMI</label><input type="number" id="p-bmi" placeholder="e.g. 26.5" min="0" step="0.1"></div>
+                <div class="space-y-1"><label class="text-[10px] font-bold text-slate-400 uppercase">Pedigree Func</label><input type="number" id="p-dpf" placeholder="e.g. 0.45" min="0" step="0.01"></div>
+                <div class="space-y-1"><label class="text-[10px] font-bold text-slate-400 uppercase">Age</label><input type="number" id="p-age" placeholder="e.g. 35" min="0"></div>
+                <button type="submit" class="md:col-span-2 mt-4 bg-brand hover:bg-opacity-90 text-white font-bold py-4 rounded-xl shadow-lg transition-all"><i class="fa-solid fa-microchip mr-2"></i>Generate Analysis</button>
+            </form>
+        </div>
+
+        <div class="lg:col-span-5">
+            <div id="res-prediction" class="glass-card rounded-3xl p-8 h-full flex flex-col items-center justify-center text-center">
+                <i class="fa-solid fa-notes-medical text-5xl text-slate-800 mb-4"></i>
+                <p class="text-slate-500 font-medium">Results will appear here.</p>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // 3D Visualizer
+        let scene, camera, renderer, helix;
+        function init3D() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.getElementById('canvas-container').appendChild(renderer.domElement);
+            helix = new THREE.Group();
+            const geom = new THREE.SphereGeometry(1, 12, 12);
+            const mat = new THREE.MeshPhongMaterial({ color: 0x2dd4bf, transparent: true, opacity: 0.3 });
+            for(let i=0; i<50; i++) {
+                const s = new THREE.Mesh(geom, mat);
+                s.position.set(Math.cos(i*0.4)*25, (i-25)*3, Math.sin(i*0.4)*25);
+                helix.add(s);
+            }
+            scene.add(helix);
+            scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+            camera.position.z = 100;
+            animate();
+        }
+        function animate() { requestAnimationFrame(animate); helix.rotation.y += 0.005; renderer.render(scene, camera); }
+        window.onload = init3D;
+
+        // Prediction Handling
+        document.getElementById('form-prediction').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const resArea = document.getElementById('res-prediction');
+            resArea.innerHTML = '<i class="fa-solid fa-dna fa-spin text-3xl text-brand"></i><p class="mt-4">Analyzing Data...</p>';
+
+            const formData = {
+                preg: parseFloat(document.getElementById('p-preg').value || 0),
+                gluc: parseFloat(document.getElementById('p-gluc').value || 0),
+                bp: parseFloat(document.getElementById('p-bp').value || 0),
+                skin: parseFloat(document.getElementById('p-skin').value || 0),
+                ins: parseFloat(document.getElementById('p-ins').value || 0),
+                bmi: parseFloat(document.getElementById('p-bmi').value || 0),
+                dpf: parseFloat(document.getElementById('p-dpf').value || 0),
+                age: parseFloat(document.getElementById('p-age').value || 0)
+            };
+
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+                const data = await response.json();
+                renderResult(data);
+            } catch (err) {
+                resArea.innerHTML = '<p class="text-red-400">Connection Error. Is the backend running?</p>';
+            }
+        });
+
+        function renderResult(data) {
+            const resArea = document.getElementById('res-prediction');
+            const color = data.risk_label === "High" ? "text-red-400" : (data.risk_label === "Moderate" ? "text-orange-400" : "text-brand-light");
+            resArea.className = "glass-card rounded-3xl p-8 h-full flex flex-col items-center justify-center reveal-card";
+            resArea.innerHTML = `
+                <h3 class="text-xl font-bold mb-4">Diagnosis Report</h3>
+                <div class="text-5xl font-bold mb-2 ${color}">${data.risk_percent}%</div>
+                <div class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-6">Probability of Risk</div>
+                <div class="bg-white/5 p-4 rounded-xl w-full text-left">
+                    <div class="flex justify-between mb-2"><span class="text-slate-400">Risk Level:</span><span class="font-bold ${color}">${data.risk_label}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-400">Uncertainty:</span><span>${data.uncertainty}</span></div>
+                </div>
+                <p class="mt-4 text-xs text-slate-400 italic">Analysis powered by Meta-AI decision streams.</p>
+            `;
+        }
+    </script>
+</body>
+</html>
