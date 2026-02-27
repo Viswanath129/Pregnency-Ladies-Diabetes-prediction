@@ -1,5 +1,7 @@
 # Pregnancy Ladies Diabetes Prediction
 
+A lightweight screening system designed for early detection of Gestational Diabetes in low-resource environments.
+
 ## Project Overview
 This project focuses on predicting diabetes risk in pregnant women using a combination of trained machine learning models, artificial neural networks, and simulated quantum variance. It features a FastAPI backend and a web-based user interface for real-time predictions.
 
