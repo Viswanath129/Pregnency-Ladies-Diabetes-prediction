@@ -1,0 +1,3 @@
+## 2024-04-25 - Scikit-Learn Single-Row Inference Overhead
+**Learning:** Constructing a `pandas.DataFrame` purely to feed a single row of data into a Scikit-Learn pipeline (like `StandardScaler` and models) introduces significant performance overhead compared to directly using a 2D `numpy.array`. Using `pd.DataFrame` forces unnecessary memory allocations and internal type checks for a single record.
+**Action:** Always prefer using a simple 2D `numpy.array` (or nested list) instead of `pandas.DataFrame` when doing single-row inferences in production APIs to avoid latency bottlenecks. Suppress `UserWarning` if models were originally trained on dataframes with feature names.

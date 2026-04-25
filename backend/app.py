@@ -8,6 +8,7 @@ import os
 import uvicorn
 import webbrowser
 import joblib
+import warnings
 
 app = FastAPI()
 
@@ -61,28 +62,32 @@ async def predict_risk(data: PatientVitals):
     try:
         # 1. Prepare Data in the correct order for the scaler
         vitals = [data.preg, data.gluc, data.bp, data.skin, data.ins, data.bmi, data.dpf, data.age]
-        cols = ["Pregnancies", "Glucose", "BloodPressure", "SkinThickness", "Insulin", "BMI", "DPF", "Age"]
         
         if MODELS_LOADED:
-            df = pd.DataFrame([vitals], columns=cols)
-            scaled_data = MODELS["scaler"].transform(df)
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", category=UserWarning)
 
-            # Get probabilities from individual streams
-            p_ml = MODELS["ml"].predict_proba(scaled_data)[:, 1][0]
-            
-            # ANN prediction (Handling potential different formats)
-            try:
-                p_ann = MODELS["ann"].predict_proba(scaled_data)[:, 1][0]
-            except:
-                pred = MODELS["ann"].predict(scaled_data)
-                p_ann = pred[0][0] if len(pred.shape) > 1 else pred[0]
+                # Use numpy array instead of pandas DataFrame for faster single-row inference
+                arr = np.array([vitals])
+                scaled_data = MODELS["scaler"].transform(arr)
 
-            # Simulated Quantum variance
-            p_q = np.clip(p_ml + np.random.normal(0, 0.02), 0, 1)
+                # Get probabilities from individual streams
+                p_ml = MODELS["ml"].predict_proba(scaled_data)[0, 1]
 
-            # Final Meta-AI decision
-            meta_input = pd.DataFrame([[p_ml, p_ann, p_q]], columns=['Classical_Prob', 'ANN_Prob', 'Quantum_Prob'])
-            final_prob = MODELS["meta"].predict_proba(meta_input)[:, 1][0]
+                # ANN prediction (Handling potential different formats)
+                try:
+                    p_ann = MODELS["ann"].predict_proba(scaled_data)[0, 1]
+                except:
+                    pred = MODELS["ann"].predict(scaled_data)
+                    p_ann = pred[0][0] if len(pred.shape) > 1 else pred[0]
+
+                # Simulated Quantum variance
+                p_q = np.clip(p_ml + np.random.normal(0, 0.02), 0, 1)
+
+                # Final Meta-AI decision
+                meta_input = np.array([[p_ml, p_ann, p_q]])
+                final_prob = MODELS["meta"].predict_proba(meta_input)[0, 1]
+
             is_sim = False
         else:
             # Mathematical Simulation fallback
