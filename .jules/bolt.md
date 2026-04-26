@@ -1,0 +1,3 @@
+## 2024-05-24 - Bypass Pandas DataFrame overhead for faster single-row Scikit-Learn Inference
+**Learning:** For extremely fast single-row inference paths using scikit-learn models, constructing a `pandas.DataFrame` just to pass feature names along with the data introduces measurable overhead (10-15%).
+**Action:** When speed is critical and the endpoint relies on single predictions sequentially, create a 2D `numpy.array` instead. To suppress the `UserWarning: X has feature names, but [Model] was fitted without feature names` warnings, use `warnings.catch_warnings()` with `warnings.simplefilter("ignore", UserWarning)`.
