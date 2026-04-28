@@ -1,0 +1,3 @@
+## 2024-05-24 - Pandas DataFrame vs NumPy Array Initialization Overhead
+**Learning:** In the FastAPI backend codebase, initializing `pandas.DataFrame` for single-row inference within the scikit-learn model's critical path adds noticeable latency drag compared to raw arrays. Bypassing pandas and relying on 2D `numpy.array` is significantly faster. Scikit-learn issues a missing feature names `UserWarning` when models fit with DataFrame are given arrays.
+**Action:** Always prefer 2D `numpy.array` for single-row scikit-learn inferences over `pd.DataFrame`. Safely catch and suppress the resultant `UserWarning` to prevent log pollution during high-throughput real-time prediction streams.
