@@ -1,0 +1,3 @@
+## 2023-10-27 - Fast Scikit-Learn Inference with NumPy arrays
+**Learning:** Instantiating `pandas.DataFrame` for single-row inference incurs significant overhead. Using 2D `numpy.array` is ~95% faster. However, scikit-learn issues a `UserWarning` about missing feature names when models were trained on pandas DataFrames but predicted on numpy arrays.
+**Action:** Replace `pd.DataFrame([data])` with `np.array([data])` for model inputs in `/predict` endpoints. Wrap the inference calls in `warnings.catch_warnings()` with `warnings.simplefilter('ignore', UserWarning)` to cleanly suppress the warnings without affecting global warning state. Explicitly cast numpy scalar outputs to standard Python `float()` for type consistency and correct JSON serialization.
