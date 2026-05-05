@@ -1,0 +1,3 @@
+## 2024-05-24 - Pandas Overhead in Single-Row Real-Time Inference
+**Learning:** For single-row inputs in high-performance or real-time ML inference endpoints (e.g., FastAPI), instantiating `pandas.DataFrame` introduces significant latency overhead (over 200x slower in microbenchmarks) compared to raw `numpy.array`. FastAPI applications under load will block when using `async def` for CPU-bound pandas and sklearn operations, further compounding the latency.
+**Action:** Always use 2D `numpy.array` and explicitly cast scalar returns to standard Python `float()` for single-row sklearn model inferences. Use `def` instead of `async def` for ML endpoints to enable FastAPI threadpool usage. Wrap in `warnings.catch_warnings` to suppress missing feature names warnings cleanly.
