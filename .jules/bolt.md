@@ -1,0 +1,3 @@
+## 2024-05-18 - Avoid Event Loop Blocking & DataFrame Overhead
+**Learning:** FastAPI routes with CPU-bound synchronous code (like Scikit-Learn `predict` calls) will block the main asyncio event loop if defined with `async def`. Additionally, instantiating `pandas.DataFrame` for single-row inference adds significant overhead compared to native `numpy` arrays.
+**Action:** Always use standard `def` for FastAPI endpoints performing heavy synchronous computations to leverage the external threadpool. Bypass `pandas.DataFrame` for single predictions, use `numpy.array`, and wrap the call in `warnings.catch_warnings()` to safely suppress expected feature name warnings.
