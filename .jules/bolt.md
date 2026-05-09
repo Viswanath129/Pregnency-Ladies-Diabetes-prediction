@@ -1,0 +1,3 @@
+## 2024-05-18 - Pandas vs Numpy Overhead in Single-Row ML Inference
+**Learning:** Instantiating `pandas.DataFrame` for single-row inference carries significant overhead. Switching to 2D `numpy.array` bypassed this bottleneck and reduced latency by over 2x (from ~5.58s to ~2.90s for 100 requests) while maintaining identical predictions. Additionally, using `def` instead of `async def` for CPU-bound routes allows FastAPI to utilize external thread pools, preventing the asyncio event loop from blocking.
+**Action:** When performing local fast inferences (like scikit-learn predict) on single records, use `numpy` arrays, catch missing feature name warnings explicitly, and wrap the endpoint in a synchronous `def` instead of `async def`.
