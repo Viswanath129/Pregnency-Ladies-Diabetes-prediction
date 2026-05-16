@@ -1,0 +1,3 @@
+## 2024-05-16 - FastAPI ML Inference Bottleneck
+**Learning:** Using `async def` for CPU-bound tasks like machine learning predictions in FastAPI blocks the main event loop, severely degrading performance under load. Furthermore, instantiating `pandas.DataFrame` for single-row inference adds considerable overhead compared to `numpy.array` (over 20ms vs 2ms overhead in my testing).
+**Action:** Always use standard `def` for synchronous CPU-bound operations in FastAPI so they execute in an external thread pool. Substitute `pandas.DataFrame` with `numpy.array` when performing single-row predictions, and suppress `UserWarning` regarding missing feature names to keep logs clean.
