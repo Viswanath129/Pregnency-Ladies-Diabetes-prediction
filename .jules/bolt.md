@@ -1,0 +1,4 @@
+
+## 2024-05-20 - Fast inference for scikit-learn models in FastAPI
+**Learning:** For scikit-learn model inference inside FastAPI routes, using standard `def` routes allows FastAPI to use its external thread pool, preventing CPU-bound inference operations from blocking the main event loop. Additionally, converting inputs immediately to 2D numpy arrays and bypassing `pandas.DataFrame` avoids instantiation overhead and reduces inference time, and wrapping in `warnings.catch_warnings()` cleans up warning logs about missing feature names.
+**Action:** When creating prediction endpoints with synchronous libraries like scikit-learn or joblib, always use `def` instead of `async def`. For single-row predictions, skip pandas DataFrames and use standard Python/NumPy arrays wrapped in warning suppressions.
