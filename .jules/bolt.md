@@ -1,0 +1,3 @@
+## 2024-05-26 - DataFrame overhead for single-row inference
+**Learning:** Using `pandas.DataFrame` for single-row inference in `scikit-learn` introduces significant performance overhead (instantiation and validation). For CPU-bound endpoints (e.g. running synchronous ML inference), using `async def` in FastAPI blocks the main event loop, causing concurrency issues.
+**Action:** Replace `pd.DataFrame` with 2D `numpy.array` wrapped in `warnings.catch_warnings()` (to suppress missing feature name warnings) for single-row inference, which can yield roughly 8x speedup. Always use standard `def` for FastAPI endpoints performing CPU-bound operations to offload them to an external thread pool.
