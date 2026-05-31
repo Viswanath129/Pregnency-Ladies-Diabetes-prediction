@@ -1,0 +1,3 @@
+## 2024-05-24 - [Avoid numpy arrays for trivial calculations]
+**Learning:** In a fast API loop, creating small numpy arrays for operations like `np.std` or `np.clip` adds significant overhead. Profiling showed that using plain Python math (like calculating standard deviation manually or using `min/max` with `random.gauss`) is much faster than `np.std` and `np.clip` + `np.random.normal` for scalar values or tiny arrays of size 3.
+**Action:** Replace `np.std` with manual variance calculation and `np.clip`/`np.random.normal` with `min(max(...))` and `random.gauss` for small lists/scalars to improve per-request latency.

@@ -3,11 +3,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 import numpy as np
-import pandas as pd
 import os
 import uvicorn
 import webbrowser
 import joblib
+import warnings
 
 app = FastAPI()
 
@@ -57,32 +57,35 @@ async def serve_ui():
     return FileResponse(os.path.join(BASE_DIR, "index.html"))
 
 @app.post("/predict")
-async def predict_risk(data: PatientVitals):
+def predict_risk(data: PatientVitals):
     try:
         # 1. Prepare Data in the correct order for the scaler
         vitals = [data.preg, data.gluc, data.bp, data.skin, data.ins, data.bmi, data.dpf, data.age]
-        cols = ["Pregnancies", "Glucose", "BloodPressure", "SkinThickness", "Insulin", "BMI", "DPF", "Age"]
         
         if MODELS_LOADED:
-            df = pd.DataFrame([vitals], columns=cols)
-            scaled_data = MODELS["scaler"].transform(df)
+            # Optimization: Bypass pd.DataFrame for faster single-row inference
+            vitals_arr = np.array([vitals])
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", UserWarning)
+                scaled_data = MODELS["scaler"].transform(vitals_arr)
 
-            # Get probabilities from individual streams
-            p_ml = MODELS["ml"].predict_proba(scaled_data)[:, 1][0]
-            
-            # ANN prediction (Handling potential different formats)
-            try:
-                p_ann = MODELS["ann"].predict_proba(scaled_data)[:, 1][0]
-            except:
-                pred = MODELS["ann"].predict(scaled_data)
-                p_ann = pred[0][0] if len(pred.shape) > 1 else pred[0]
+                # Get probabilities from individual streams
+                p_ml = float(MODELS["ml"].predict_proba(scaled_data)[:, 1][0])
 
-            # Simulated Quantum variance
-            p_q = np.clip(p_ml + np.random.normal(0, 0.02), 0, 1)
+                # ANN prediction (Handling potential different formats)
+                try:
+                    p_ann = float(MODELS["ann"].predict_proba(scaled_data)[:, 1][0])
+                except Exception:
+                    pred = MODELS["ann"].predict(scaled_data)
+                    p_ann = float(pred[0][0] if len(pred.shape) > 1 else pred[0])
 
-            # Final Meta-AI decision
-            meta_input = pd.DataFrame([[p_ml, p_ann, p_q]], columns=['Classical_Prob', 'ANN_Prob', 'Quantum_Prob'])
-            final_prob = MODELS["meta"].predict_proba(meta_input)[:, 1][0]
+                import random
+                # Simulated Quantum variance (Optimization: Use standard python random and min/max)
+                p_q = min(max(p_ml + random.gauss(0, 0.02), 0.0), 1.0)
+
+                # Final Meta-AI decision
+                meta_input = np.array([[p_ml, p_ann, p_q]])
+                final_prob = float(MODELS["meta"].predict_proba(meta_input)[:, 1][0])
             is_sim = False
         else:
             # Mathematical Simulation fallback
@@ -100,10 +103,15 @@ def build_response(final_prob, p_ml, p_ann, p_q, is_sim):
     # Thresholds: Low < 40%, Moderate 40-70%, High > 70%
     label = "High" if risk_pct > 70 else ("Moderate" if risk_pct > 40 else "Low")
     
+    # Calculate standard deviation manually for performance, avoiding overhead of numpy arrays
+    mean = (p_ml + p_ann + p_q) / 3.0
+    var = ((p_ml - mean)**2 + (p_ann - mean)**2 + (p_q - mean)**2) / 3.0
+    std = var ** 0.5
+
     return {
         "risk_percent": risk_pct,
         "risk_label": label,
-        "uncertainty": round(float(np.std([p_ml, p_ann, p_q])), 4),
+        "uncertainty": round(std, 4),
         "streams": {
             "classical": round(p_ml * 100, 2),
             "ann": round(p_ann * 100, 2),
