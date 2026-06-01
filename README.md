@@ -3,18 +3,18 @@
 A lightweight screening system designed for early detection of Gestational Diabetes in low-resource environments.
 
 ## Project Overview
-This project focuses on predicting diabetes risk in pregnant women using a combination of trained machine learning models, artificial neural networks, and simulated quantum variance. It features a FastAPI backend and a web-based user interface for real-time predictions.
+This project focuses on predicting diabetes risk in pregnant women using a combination of trained machine learning models, artificial neural networks, and simulated stochastic variance. It features a FastAPI backend and a web-based user interface for real-time predictions.
 
 ## Research Question
-How can we effectively combine different predictive modeling techniques (Classical ML, ANN, and simulated Quantum variance) to provide robust diabetes risk assessments during pregnancy?
+How can we effectively combine different predictive modeling techniques (Classical ML, ANN, and simulated Stochastic Variance) to provide robust diabetes risk assessments during pregnancy?
 
 ## Methodology
 The pipeline takes patient vitals (Pregnancies, Glucose, Blood Pressure, Skin Thickness, Insulin, BMI, Diabetes Pedigree Function, Age) and scales the input. The scaled data is passed through multiple predictive streams:
 1. **Classical Machine Learning** (Scikit-Learn)
 2. **Artificial Neural Network (ANN)**
-3. **Simulated Quantum Variance** (adding gaussian noise to simulate quantum uncertainty)
+3. **Simulated Stochastic Variance** (incorporating probabilistic noise to model predictive uncertainty)
 
-The results are then aggregated using a **Meta-AI** model to output a final probability and diabetes risk label.
+The results are then aggregated using an **Ensemble Decision Engine** model to output a final probability and diabetes risk label.
 
 ## Architecture
 - **Backend:** FastAPI, Pandas, NumPy, Scikit-Learn
@@ -22,7 +22,7 @@ The results are then aggregated using a **Meta-AI** model to output a final prob
 - **Frontend:** HTML/JS integrated via FastAPI `FileResponse`
 
 ## Experiments
-- Testing different weighting mechanisms for Meta-AI.
+- Testing different weighting mechanisms for the Ensemble Decision Engine.
 - Evaluating latency and response time using a real-time FastAPI local server.
 
 ## Preliminary Results
@@ -30,18 +30,18 @@ The results are then aggregated using a **Meta-AI** model to output a final prob
 |--------|----------|-------------|
 | Classical | Baseline probability | Float (0 to 1) |
 | ANN | High-dimensional pattern extraction | Float (0 to 1) |
-| Quantum | Uncertainty simulation | Float (0 to 1) |
-| **Meta-AI** | Final Aggregation | **Risk % & Label** |
+| Stochastic Variance | Uncertainty simulation | Float (0 to 1) |
+| **Ensemble Decision Engine** | Final Aggregation | **Risk % & Label** |
 
 ## Observations
-- The ensemble Meta-AI approach provides smoother probability surfaces compared to isolated streams.
+- The ensemble decision approach provides smoother probability surfaces compared to isolated streams.
 - Model loading is lightweight, enabling rapid real-time inference on local servers.
 
 ## Limitations
-- Simulated Quantum stream rather than real quantum hardware.
+- Simulated Stochastic Variance stream rather than physical hardware-based entropy.
 - Local inference only; not yet tested on edge or cloud concurrent loads.
 
 ## Future Work
-- Integration with true cloud-based Quantum APIs (e.g., Qiskit).
+- Integration with high-entropy source APIs for enhanced stochastic variance.
 - Expanding the frontend dashboard with historical patient tracking.
 - Optimizing model size for edge deployment.
