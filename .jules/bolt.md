@@ -1,0 +1,3 @@
+## 2024-06-06 - FastAPI ML Inference Bottlenecks
+**Learning:** In fast API loops containing ML inference, instantiating `pandas.DataFrame` from single-row payloads introduces significant overhead. Furthermore, high-overhead NumPy scalar functions like `np.clip` and `np.random.normal` slow down hot paths considerably when `async def` blocks the event loop.
+**Action:** When handling single-row ML inference in FastAPI endpoints, define the endpoint synchronously (i.e. use `def` instead of `async def`) so FastAPI offloads it to a threadpool. Replace `pandas.DataFrame` with 2D `numpy.array` and swap NumPy scalar operations for pure Python equivalents (`min`, `max`, `random.gauss`, `math.sqrt`) to avoid instantiation and scalar operation overhead.
