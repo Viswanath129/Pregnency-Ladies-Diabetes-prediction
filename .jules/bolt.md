@@ -1,0 +1,3 @@
+## 2025-02-17 - CPU-bound operations in FastAPI and Pandas overhead
+**Learning:** In FastAPI, using `async def` for CPU-bound operations (like `scikit-learn` inference) completely blocks the main event loop, destroying concurrency. Also, constructing a `pd.DataFrame` for a single-row inference adds massive overhead compared to using a pure `np.array`.
+**Action:** Always use standard `def` for FastAPI endpoints performing heavy math or machine learning to allow execution in an external thread pool. Bypass `pd.DataFrame` instantiation and use raw 2D `np.array`s directly for scikit-learn when making single predictions.
