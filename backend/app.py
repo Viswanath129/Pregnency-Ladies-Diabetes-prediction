@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
@@ -8,16 +8,7 @@ import os
 import uvicorn
 import webbrowser
 import joblib
-
-app = FastAPI()
-
-# --- CORS Settings ---
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+from contextlib import asynccontextmanager
 
 # --- MODEL LOADING ---
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -28,19 +19,30 @@ FILES = {
     "scaler": "data_scaler.joblib"
 }
 
-MODELS = {}
-MODELS_LOADED = False
-
-try:
+@asynccontextmanager
+async def lifespan(app: FastAPI):
     # Attempt to load all 4 files from the local directory
-    MODELS["ml"] = joblib.load(os.path.join(BASE_DIR, FILES["ml"]))
-    MODELS["ann"] = joblib.load(os.path.join(BASE_DIR, FILES["ann"]))
-    MODELS["meta"] = joblib.load(os.path.join(BASE_DIR, FILES["meta"]))
-    MODELS["scaler"] = joblib.load(os.path.join(BASE_DIR, FILES["scaler"]))
-    MODELS_LOADED = True
-    print("✅ All .joblib models loaded successfully.")
-except Exception as e:
-    print(f"⚠️ Warning: Could not load models ({e}). Simulation mode enabled.")
+    try:
+        app.state.ml = joblib.load(os.path.join(BASE_DIR, FILES["ml"]))
+        app.state.ann = joblib.load(os.path.join(BASE_DIR, FILES["ann"]))
+        app.state.meta = joblib.load(os.path.join(BASE_DIR, FILES["meta"]))
+        app.state.scaler = joblib.load(os.path.join(BASE_DIR, FILES["scaler"]))
+        app.state.models_loaded = True
+        print("✅ All .joblib models loaded successfully.")
+    except Exception as e:
+        print(f"⚠️ Warning: Could not load models ({e}). Simulation mode enabled.")
+        app.state.models_loaded = False
+    yield
+
+app = FastAPI(lifespan=lifespan)
+
+# --- CORS Settings ---
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 class PatientVitals(BaseModel):
     preg: float
@@ -57,32 +59,33 @@ async def serve_ui():
     return FileResponse(os.path.join(BASE_DIR, "index.html"))
 
 @app.post("/predict")
-async def predict_risk(data: PatientVitals):
+async def predict_risk(data: PatientVitals, request: Request):
     try:
         # 1. Prepare Data in the correct order for the scaler
         vitals = [data.preg, data.gluc, data.bp, data.skin, data.ins, data.bmi, data.dpf, data.age]
         cols = ["Pregnancies", "Glucose", "BloodPressure", "SkinThickness", "Insulin", "BMI", "DPF", "Age"]
         
-        if MODELS_LOADED:
+        if request.app.state.models_loaded:
             df = pd.DataFrame([vitals], columns=cols)
-            scaled_data = MODELS["scaler"].transform(df)
+            scaled_data = request.app.state.scaler.transform(df)
 
-            # Get probabilities from individual streams
-            p_ml = MODELS["ml"].predict_proba(scaled_data)[:, 1][0]
+            # Get probabilities from individual streams using raw array to suppress feature name warnings
+            # scaled_data is already a numpy array from the scaler
+            p_ml = request.app.state.ml.predict_proba(scaled_data)[:, 1][0]
             
             # ANN prediction (Handling potential different formats)
             try:
-                p_ann = MODELS["ann"].predict_proba(scaled_data)[:, 1][0]
+                p_ann = request.app.state.ann.predict_proba(scaled_data)[:, 1][0]
             except:
-                pred = MODELS["ann"].predict(scaled_data)
+                pred = request.app.state.ann.predict(scaled_data)
                 p_ann = pred[0][0] if len(pred.shape) > 1 else pred[0]
 
-            # Simulated Quantum variance
+            # Stochastic Variance
             p_q = np.clip(p_ml + np.random.normal(0, 0.02), 0, 1)
 
-            # Final Meta-AI decision
-            meta_input = pd.DataFrame([[p_ml, p_ann, p_q]], columns=['Classical_Prob', 'ANN_Prob', 'Quantum_Prob'])
-            final_prob = MODELS["meta"].predict_proba(meta_input)[:, 1][0]
+            # Final Ensemble Decision Engine
+            meta_input = np.array([[p_ml, p_ann, p_q]])
+            final_prob = request.app.state.meta.predict_proba(meta_input)[:, 1][0]
             is_sim = False
         else:
             # Mathematical Simulation fallback
@@ -107,7 +110,7 @@ def build_response(final_prob, p_ml, p_ann, p_q, is_sim):
         "streams": {
             "classical": round(p_ml * 100, 2),
             "ann": round(p_ann * 100, 2),
-            "quantum": round(p_q * 100, 2)
+            "stochastic_variance": round(p_q * 100, 2)
         },
         "is_simulated": is_sim
     }
