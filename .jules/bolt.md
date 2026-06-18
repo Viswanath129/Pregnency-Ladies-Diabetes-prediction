@@ -1,0 +1,3 @@
+## 2025-02-14 - Replace Pandas and Numpy in fast API loops
+**Learning:** In fast API loops, using `pandas.DataFrame` instantiation and heavy NumPy functions (`np.clip`, `np.random.normal`, `np.std`) for single-row/scalar values introduces significant overhead compared to `np.array` and pure Python equivalents.
+**Action:** Use lightweight 2D `np.array` for inference when bypassing DataFrames, and replace NumPy scalar operations with built-ins like `random.gauss`, `min`/`max`, and manual math calculations to drastically reduce computational cost. Also change CPU-bound async endpoint definitions to standard `def` to ensure FastAPI runs them efficiently via threadpools.
