@@ -1,0 +1,3 @@
+## 2024-06-20 - Pandas and Numpy Initialization Overhead in Fast API Loops
+**Learning:** In highly trafficked fast API routes, `pandas.DataFrame` initialization and even calls to scalar operations in NumPy (`np.std`, `np.clip`, `np.random.normal`) incur significant micro-overhead (ms vs microseconds) compared to their raw `np.array` and pure Python standard library equivalents (`random.gauss`, `math.sqrt`, manual stddev computation).
+**Action:** When executing single-row scikit-learn inferences, replace pandas dataframe wrapping with pure 2d `np.array`, manually suppress feature name warnings using `warnings.catch_warnings()`, and explicitly use pure Python alternatives for scalar math.
