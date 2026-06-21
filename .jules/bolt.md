@@ -1,0 +1,3 @@
+## 2024-06-21 - [FastAPI & ML Inference Performance]
+**Learning:** In fast API loops, using `pandas.DataFrame` and `numpy` for scalar/small-array operations (like `np.std`, `np.clip`, `np.random.normal`) adds significant overhead compared to 2D `numpy.array` and pure Python equivalents (`math.sqrt`, `random.gauss`, `min`/`max`). Also, defining CPU-bound API endpoints (like ML inference) with `async def` blocks the main event loop, while using standard `def` allows FastAPI to offload to an external thread pool.
+**Action:** Replace `pandas.DataFrame` instantiation with 2D `numpy.array`, replace `numpy` scalar operations with pure Python equivalents, and convert CPU-bound FastAPI endpoints from `async def` to `def` to improve request throughput and latency.
