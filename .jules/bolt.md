@@ -1,0 +1,3 @@
+## 2024-05-24 - FastAPI + Scikit-Learn Performance Bottleneck
+**Learning:** In FastAPI, CPU-bound tasks like machine learning inference block the event loop when used within `async def` endpoints, severely degrading performance under load. Also, for single-row inference, creating `pandas.DataFrame` objects and using NumPy for small scalar math (like `np.random.normal` or `np.std`) introduces measurable overhead.
+**Action:** Define CPU-heavy endpoints with `def` (so FastAPI runs them in a separate thread pool). Use `np.array` directly instead of `pandas.DataFrame` for inference inputs, and favor standard library math (`math`, `random`) over NumPy for scalar operations inside fast loops or endpoints.
