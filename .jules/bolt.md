@@ -1,0 +1,3 @@
+## 2024-05-24 - [Avoid Pandas Overhead in Single-Row Inference]
+**Learning:** Using `pandas.DataFrame` instantiation and indexing inside a fast web endpoint for single row inference causes massive overhead, especially for ML streams. `np.std()` and `np.clip()` also carry large overhead when used on scalars or very small arrays.
+**Action:** Always prefer 2D `numpy.array` combined with pure-Python operations (like `math.sqrt()` or `random.gauss()`) when predicting single objects per request. If warnings about missing feature names arise, suppress them using `warnings.filterwarnings` at the module level.
