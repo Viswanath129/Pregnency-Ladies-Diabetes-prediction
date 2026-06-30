@@ -1,0 +1,3 @@
+## 2024-06-30 - CPU-Bound ML Inference in FastAPI
+**Learning:** In FastAPI, using `async def` for a CPU-bound operation (like Scikit-Learn `predict` or complex numpy math) blocks the main asynchronous event loop. Additionally, instantiating `pd.DataFrame` for single-row inference and using `numpy` functions (`np.clip`, `np.std`, `np.random.normal`) for scalar/small-array math introduces massive unnecessary overhead.
+**Action:** Always use standard `def` for endpoints executing synchronous CPU-heavy tasks so FastAPI runs them in a background threadpool. Bypass `pd.DataFrame` instantiation by using `numpy` arrays directly for model inputs, and use standard Python math (`min`/`max`, `math.sqrt`, `random.gauss`) for scalar operations.
