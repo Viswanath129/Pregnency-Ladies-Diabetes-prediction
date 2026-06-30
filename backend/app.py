@@ -5,9 +5,14 @@ from pydantic import BaseModel
 import numpy as np
 import pandas as pd
 import os
+import random
+import math
+import warnings
 import uvicorn
 import webbrowser
 import joblib
+
+warnings.filterwarnings("ignore", message="X does not have valid feature names")
 
 app = FastAPI()
 
@@ -56,15 +61,17 @@ class PatientVitals(BaseModel):
 async def serve_ui():
     return FileResponse(os.path.join(BASE_DIR, "index.html"))
 
+# Use def instead of async def for CPU-bound ML inference to allow FastAPI threadpool execution
 @app.post("/predict")
-async def predict_risk(data: PatientVitals):
+def predict_risk(data: PatientVitals):
     try:
         # 1. Prepare Data in the correct order for the scaler
         vitals = [data.preg, data.gluc, data.bp, data.skin, data.ins, data.bmi, data.dpf, data.age]
         cols = ["Pregnancies", "Glucose", "BloodPressure", "SkinThickness", "Insulin", "BMI", "DPF", "Age"]
         
         if MODELS_LOADED:
-            df = pd.DataFrame([vitals], columns=cols)
+            # Bypass slow pd.DataFrame instantiation for single-row inference
+            df = np.array([vitals])
             scaled_data = MODELS["scaler"].transform(df)
 
             # Get probabilities from individual streams
@@ -77,11 +84,11 @@ async def predict_risk(data: PatientVitals):
                 pred = MODELS["ann"].predict(scaled_data)
                 p_ann = pred[0][0] if len(pred.shape) > 1 else pred[0]
 
-            # Simulated Quantum variance
-            p_q = np.clip(p_ml + np.random.normal(0, 0.02), 0, 1)
+            # Simulated Quantum variance (use standard python math to eliminate np overhead on scalars)
+            p_q = min(max(p_ml + random.gauss(0, 0.02), 0.0), 1.0)
 
-            # Final Meta-AI decision
-            meta_input = pd.DataFrame([[p_ml, p_ann, p_q]], columns=['Classical_Prob', 'ANN_Prob', 'Quantum_Prob'])
+            # Final Meta-AI decision (bypass slow pd.DataFrame instantiation)
+            meta_input = np.array([[p_ml, p_ann, p_q]])
             final_prob = MODELS["meta"].predict_proba(meta_input)[:, 1][0]
             is_sim = False
         else:
@@ -100,10 +107,16 @@ def build_response(final_prob, p_ml, p_ann, p_q, is_sim):
     # Thresholds: Low < 40%, Moderate 40-70%, High > 70%
     label = "High" if risk_pct > 70 else ("Moderate" if risk_pct > 40 else "Low")
     
+    # Manual variance calculation to avoid numpy overhead for small arrays
+    probs = [p_ml, p_ann, p_q]
+    mean = sum(probs) / 3
+    var = sum((x - mean) ** 2 for x in probs) / 3
+    std_val = math.sqrt(var)
+
     return {
         "risk_percent": risk_pct,
         "risk_label": label,
-        "uncertainty": round(float(np.std([p_ml, p_ann, p_q])), 4),
+        "uncertainty": round(float(std_val), 4),
         "streams": {
             "classical": round(p_ml * 100, 2),
             "ann": round(p_ann * 100, 2),
