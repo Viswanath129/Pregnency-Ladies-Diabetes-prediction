@@ -1,0 +1,3 @@
+## 2024-05-23 - Fast API ML Inference Optimization
+**Learning:** In FastAPI, using `async def` for CPU-bound ML inference blocks the main event loop, causing poor performance. Instantiating `pandas.DataFrame` for single-row inference adds high overhead. Small array operations with NumPy (`np.std`, `np.clip`, `np.random.normal`) are slower than pure Python equivalents (`math`, `random`) due to dispatch overhead. Thread-pooled apps need global `warnings.filterwarnings` instead of context managers to silence warnings safely.
+**Action:** Use standard `def` for CPU-bound routes to utilize external thread pools. Pass 2D `numpy.array` instead of DataFrames for single predictions. Use pure Python `math`/`random` for scalar math instead of NumPy. Configure warnings globally.
