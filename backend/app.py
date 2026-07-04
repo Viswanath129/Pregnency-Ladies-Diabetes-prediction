@@ -8,6 +8,11 @@ import os
 import uvicorn
 import webbrowser
 import joblib
+import warnings
+import random
+import math
+
+warnings.filterwarnings("ignore", message="X does not have valid feature names")
 
 app = FastAPI()
 
@@ -57,14 +62,14 @@ async def serve_ui():
     return FileResponse(os.path.join(BASE_DIR, "index.html"))
 
 @app.post("/predict")
-async def predict_risk(data: PatientVitals):
+def predict_risk(data: PatientVitals):
     try:
         # 1. Prepare Data in the correct order for the scaler
         vitals = [data.preg, data.gluc, data.bp, data.skin, data.ins, data.bmi, data.dpf, data.age]
         cols = ["Pregnancies", "Glucose", "BloodPressure", "SkinThickness", "Insulin", "BMI", "DPF", "Age"]
         
         if MODELS_LOADED:
-            df = pd.DataFrame([vitals], columns=cols)
+            df = np.array([vitals])
             scaled_data = MODELS["scaler"].transform(df)
 
             # Get probabilities from individual streams
@@ -78,10 +83,10 @@ async def predict_risk(data: PatientVitals):
                 p_ann = pred[0][0] if len(pred.shape) > 1 else pred[0]
 
             # Simulated Quantum variance
-            p_q = np.clip(p_ml + np.random.normal(0, 0.02), 0, 1)
+            p_q = max(0.0, min(1.0, p_ml + random.gauss(0.0, 0.02)))
 
             # Final Meta-AI decision
-            meta_input = pd.DataFrame([[p_ml, p_ann, p_q]], columns=['Classical_Prob', 'ANN_Prob', 'Quantum_Prob'])
+            meta_input = np.array([[p_ml, p_ann, p_q]])
             final_prob = MODELS["meta"].predict_proba(meta_input)[:, 1][0]
             is_sim = False
         else:
@@ -100,10 +105,14 @@ def build_response(final_prob, p_ml, p_ann, p_q, is_sim):
     # Thresholds: Low < 40%, Moderate 40-70%, High > 70%
     label = "High" if risk_pct > 70 else ("Moderate" if risk_pct > 40 else "Low")
     
+    mean_val = (p_ml + p_ann + p_q) / 3
+    var_val = ((p_ml - mean_val)**2 + (p_ann - mean_val)**2 + (p_q - mean_val)**2) / 3
+    std_val = math.sqrt(var_val)
+
     return {
         "risk_percent": risk_pct,
         "risk_label": label,
-        "uncertainty": round(float(np.std([p_ml, p_ann, p_q])), 4),
+        "uncertainty": round(std_val, 4),
         "streams": {
             "classical": round(p_ml * 100, 2),
             "ann": round(p_ann * 100, 2),
