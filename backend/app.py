@@ -3,11 +3,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 import numpy as np
-import pandas as pd
 import os
 import uvicorn
 import webbrowser
 import joblib
+import warnings
+
+# Suppress warnings about missing feature names when using numpy arrays instead of pandas DataFrames
+# Use global filterwarnings to avoid thread-safety issues in thread-pooled FastAPI apps
+warnings.filterwarnings('ignore', category=UserWarning, module='sklearn')
 
 app = FastAPI()
 
@@ -57,15 +61,15 @@ async def serve_ui():
     return FileResponse(os.path.join(BASE_DIR, "index.html"))
 
 @app.post("/predict")
-async def predict_risk(data: PatientVitals):
+def predict_risk(data: PatientVitals):
     try:
         # 1. Prepare Data in the correct order for the scaler
         vitals = [data.preg, data.gluc, data.bp, data.skin, data.ins, data.bmi, data.dpf, data.age]
-        cols = ["Pregnancies", "Glucose", "BloodPressure", "SkinThickness", "Insulin", "BMI", "DPF", "Age"]
         
         if MODELS_LOADED:
-            df = pd.DataFrame([vitals], columns=cols)
-            scaled_data = MODELS["scaler"].transform(df)
+            # Bypass pandas DataFrame for single-row inference for optimal performance
+            vitals_arr = np.array([vitals])
+            scaled_data = MODELS["scaler"].transform(vitals_arr)
 
             # Get probabilities from individual streams
             p_ml = MODELS["ml"].predict_proba(scaled_data)[:, 1][0]
@@ -73,7 +77,7 @@ async def predict_risk(data: PatientVitals):
             # ANN prediction (Handling potential different formats)
             try:
                 p_ann = MODELS["ann"].predict_proba(scaled_data)[:, 1][0]
-            except:
+            except Exception:
                 pred = MODELS["ann"].predict(scaled_data)
                 p_ann = pred[0][0] if len(pred.shape) > 1 else pred[0]
 
@@ -81,8 +85,9 @@ async def predict_risk(data: PatientVitals):
             p_q = np.clip(p_ml + np.random.normal(0, 0.02), 0, 1)
 
             # Final Meta-AI decision
-            meta_input = pd.DataFrame([[p_ml, p_ann, p_q]], columns=['Classical_Prob', 'ANN_Prob', 'Quantum_Prob'])
-            final_prob = MODELS["meta"].predict_proba(meta_input)[:, 1][0]
+            # Bypass pandas DataFrame for single-row inference for optimal performance
+            meta_input_arr = np.array([[p_ml, p_ann, p_q]])
+            final_prob = MODELS["meta"].predict_proba(meta_input_arr)[:, 1][0]
             is_sim = False
         else:
             # Mathematical Simulation fallback
