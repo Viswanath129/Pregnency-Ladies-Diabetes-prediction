@@ -122,15 +122,26 @@
             const resArea = document.getElementById('res-prediction');
             const color = data.risk_label === "High" ? "text-red-400" : (data.risk_label === "Moderate" ? "text-orange-400" : "text-brand-light");
             resArea.className = "glass-card rounded-3xl p-8 h-full flex flex-col items-center justify-center reveal-card";
+
+            // Build individual stream details, mapping 'stochastic_variance' cleanly for the display.
+            const streamsHtml = Object.entries(data.streams || {}).map(([key, value]) => {
+                const label = key.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+                return `<div class="flex justify-between text-xs mt-1"><span class="text-slate-400">${label}:</span><span>${value}%</span></div>`;
+            }).join('');
+
             resArea.innerHTML = `
                 <h3 class="text-xl font-bold mb-4">Diagnosis Report</h3>
                 <div class="text-5xl font-bold mb-2 ${color}">${data.risk_percent}%</div>
                 <div class="text-xs font-bold uppercase tracking-widest text-slate-400 mb-6">Probability of Risk</div>
                 <div class="bg-white/5 p-4 rounded-xl w-full text-left">
                     <div class="flex justify-between mb-2"><span class="text-slate-400">Risk Level:</span><span class="font-bold ${color}">${data.risk_label}</span></div>
-                    <div class="flex justify-between"><span class="text-slate-400">Uncertainty:</span><span>${data.uncertainty}</span></div>
+                    <div class="flex justify-between mb-2"><span class="text-slate-400">Uncertainty:</span><span>${data.uncertainty}</span></div>
+                    <div class="border-t border-white/10 my-2 pt-2">
+                        <div class="text-[10px] font-bold text-slate-400 uppercase mb-1">Decision Streams</div>
+                        ${streamsHtml}
+                    </div>
                 </div>
-                <p class="mt-4 text-xs text-slate-400 italic">Analysis powered by Meta-AI decision streams.</p>
+                <p class="mt-4 text-xs text-slate-400 italic">Analysis powered by Ensemble Decision Engine streams.</p>
             `;
         }
     </script>
