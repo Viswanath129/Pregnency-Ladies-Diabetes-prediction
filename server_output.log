@@ -1,0 +1,12 @@
+INFO:     Started server process [52054]
+INFO:     Waiting for application startup.
+2026-08-10 17:13:02,847 [INFO] backend_api: All model/scaler joblib assets loaded successfully.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+INFO:     127.0.0.1:55330 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:59226 - "POST /predict HTTP/1.1" 200 OK
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+2026-08-10 17:14:25,653 [INFO] backend_api: Lifespan cleanup complete.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [52054]
